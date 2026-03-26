@@ -109,6 +109,25 @@ export class GameScene extends Phaser.Scene {
         // Update player movement
         this._updatePlayerMovement();
 
+        // Player trail effect
+        if (this.player.body.speed > 20) {
+            if (!this._trailTimer) this._trailTimer = 0;
+            this._trailTimer += delta;
+            if (this._trailTimer > 50) {
+                this._trailTimer = 0;
+                const trail = this.add.circle(this.player.x, this.player.y + 5, 4, 0x00ffff, 0.3);
+                trail.setDepth(1);
+                this.tweens.add({
+                    targets: trail,
+                    alpha: 0,
+                    scaleX: 0.2,
+                    scaleY: 0.2,
+                    duration: 300,
+                    onComplete: () => trail.destroy(),
+                });
+            }
+        }
+
         // Spawn enemies
         if (this.spawnTimer >= this.spawnRate) {
             this.spawnTimer = 0;
@@ -144,6 +163,9 @@ export class GameScene extends Phaser.Scene {
             this.playerHP = Math.min(this.playerMaxHP, this.playerHP + this.passives.regen * dt);
         }
 
+        // Update enemy HP bars
+        this._updateEnemyHPBars();
+
         // Update HUD
         this._updateHUD();
 
@@ -151,6 +173,28 @@ export class GameScene extends Phaser.Scene {
         this.enemies.getChildren().forEach(enemy => {
             if (!enemy.active) return;
             this.physics.moveToObject(enemy, this.player, enemy.getData('speed'));
+        });
+    }
+
+    _updateEnemyHPBars() {
+        this.enemies.getChildren().forEach(enemy => {
+            if (!enemy.active) return;
+            const hp = enemy.getData('hp');
+            const maxHp = enemy.getData('maxHp');
+            if (hp >= maxHp) return; // Don't show bar if full HP
+
+            // Lazy create HP bar
+            if (!enemy.hpBar) {
+                enemy.hpBar = this.add.graphics();
+                enemy.hpBar.setDepth(12);
+            }
+
+            const barWidth = enemy.getData('isBoss') ? 50 : 20;
+            enemy.hpBar.clear();
+            enemy.hpBar.fillStyle(0x000000, 0.5);
+            enemy.hpBar.fillRect(enemy.x - barWidth / 2, enemy.y - enemy.height / 2 - 8, barWidth, 4);
+            enemy.hpBar.fillStyle(0xff3344, 0.9);
+            enemy.hpBar.fillRect(enemy.x - barWidth / 2, enemy.y - enemy.height / 2 - 8, barWidth * (hp / maxHp), 4);
         });
     }
 
