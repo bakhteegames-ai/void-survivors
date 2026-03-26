@@ -19,14 +19,14 @@ export class UpgradeScene extends Phaser.Scene {
 
         // Dim overlay
         const overlay = this.add.graphics();
-        overlay.fillStyle(0x000000, 0.7);
+        overlay.fillStyle(0x3d2a1a, 0.85);
         overlay.fillRect(0, 0, width, height);
 
         // Title
         this.add.text(width / 2, height * 0.1, 'CHOOSE UPGRADE', {
             fontSize: '28px',
             fontFamily: 'Arial Black, Arial, sans-serif',
-            color: '#00ffff',
+            color: '#e8913a',
             stroke: '#000000',
             strokeThickness: 3,
         }).setOrigin(0.5);
@@ -90,7 +90,7 @@ export class UpgradeScene extends Phaser.Scene {
                     description: passive.description,
                     level: `Lv.${currentLevel + 1}`,
                     icon: passive.icon,
-                    color: COLORS.NEON_GREEN,
+                    color: COLORS.KITCHEN_GREEN,
                     rarity: 'common',
                 });
             }
@@ -107,6 +107,13 @@ export class UpgradeScene extends Phaser.Scene {
                 return 0;
             });
         }
+
+        // Force Slipper Orbit or Spray Can to the front for the first level up hooks
+        pool.sort((a, b) => {
+            if (a.key === 'slipperOrbit' && !this.weapons['slipperOrbit']) return -1;
+            if (b.key === 'slipperOrbit' && !this.weapons['slipperOrbit']) return 1;
+            return 0;
+        });
 
         for (let i = 0; i < Math.min(3, pool.length); i++) {
             options.push(pool[i]);
@@ -157,7 +164,7 @@ export class UpgradeScene extends Phaser.Scene {
         iconBg.strokeCircle(0, -cardHeight / 2 + 50, iconSize / 2);
 
         // Icon text (emoji or symbol)
-        const iconText = option.icon || (option.type === 'weapon' ? '⚔' : '✦');
+        const iconText = option.icon || (option.type === 'weapon' ? '🐛' : '✨');
         this.add.text(0, -cardHeight / 2 + 50, iconText, {
             fontSize: '22px',
         }).setOrigin(0.5);
@@ -221,7 +228,7 @@ export class UpgradeScene extends Phaser.Scene {
             window.soundManager?.play('select');
 
             // Flash selected card
-            this.cameras.main.flash(100, 0, 255, 255, 0.2);
+            this.cameras.main.flash(100, 242, 201, 76, 0.2);
 
             this.time.delayedCall(150, () => {
                 if (this.callback) {

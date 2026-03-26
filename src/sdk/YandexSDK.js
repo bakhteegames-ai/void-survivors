@@ -47,13 +47,19 @@ export class YandexSDK {
                 callbacks: {
                     onOpen: () => {
                         console.log('Interstitial opened');
+                        window.dispatchEvent(new Event('ad_open'));
+                        if (window.soundManager && window.soundManager.ctx) window.soundManager.ctx.suspend();
                     },
                     onClose: (wasShown) => {
                         this.lastAdTime = Date.now();
+                        window.dispatchEvent(new Event('ad_close'));
+                        if (window.soundManager && window.soundManager.ctx) window.soundManager.ctx.resume();
                         resolve(wasShown);
                     },
                     onError: (error) => {
                         console.warn('Interstitial error:', error);
+                        window.dispatchEvent(new Event('ad_close'));
+                        if (window.soundManager && window.soundManager.ctx) window.soundManager.ctx.resume();
                         resolve(false);
                     },
                 },
@@ -69,15 +75,21 @@ export class YandexSDK {
                 callbacks: {
                     onOpen: () => {
                         console.log('Rewarded ad opened');
+                        window.dispatchEvent(new Event('ad_open'));
+                        if (window.soundManager && window.soundManager.ctx) window.soundManager.ctx.suspend();
                     },
                     onRewarded: () => {
                         resolve(true);
                     },
                     onClose: () => {
+                        window.dispatchEvent(new Event('ad_close'));
+                        if (window.soundManager && window.soundManager.ctx) window.soundManager.ctx.resume();
                         // resolved via onRewarded
                     },
                     onError: (error) => {
                         console.warn('Rewarded ad error:', error);
+                        window.dispatchEvent(new Event('ad_close'));
+                        if (window.soundManager && window.soundManager.ctx) window.soundManager.ctx.resume();
                         resolve(false);
                     },
                 },

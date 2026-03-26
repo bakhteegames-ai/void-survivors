@@ -29,7 +29,7 @@ module.exports = (env, argv) => {
         plugins: [
             new HtmlWebpackPlugin({
                 template: './src/index.html',
-                title: 'Void Survivors',
+                title: 'Bug Kitchen',
                 inject: 'body',
             }),
             new CopyWebpackPlugin({

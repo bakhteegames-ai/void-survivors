@@ -13,13 +13,13 @@ export class MenuScene extends Phaser.Scene {
         this._createBackground(width, height);
 
         // Title with glow effect
-        const title = this.add.text(width / 2, height * 0.2, 'VOID\nSURVIVORS', {
+        const title = this.add.text(width / 2, height * 0.2, 'BUG\nKITCHEN', {
             fontSize: '64px',
             fontFamily: 'Arial Black, Arial, sans-serif',
-            color: '#ffffff',
+            color: '#3d2a1a',
             align: 'center',
             lineSpacing: 8,
-            stroke: '#00ffff',
+            stroke: '#e8913a',
             strokeThickness: 2,
         }).setOrigin(0.5);
 
@@ -34,10 +34,10 @@ export class MenuScene extends Phaser.Scene {
         });
 
         // Subtitle
-        this.add.text(width / 2, height * 0.38, 'Survive the Void. Collect. Upgrade. Dominate.', {
+        this.add.text(width / 2, height * 0.38, 'Grab your slippers. The bugs are coming.', {
             fontSize: '14px',
             fontFamily: 'Arial, sans-serif',
-            color: '#888899',
+            color: '#654b33',
             align: 'center',
         }).setOrigin(0.5);
 
@@ -70,10 +70,10 @@ export class MenuScene extends Phaser.Scene {
         });
 
         // Version
-        this.add.text(width / 2, height - 20, 'v1.0.0 | Made with ❤️', {
+        this.add.text(width / 2, height - 20, 'v0.1 | Bug Kitchen 🪳', {
             fontSize: '11px',
             fontFamily: 'Arial, sans-serif',
-            color: '#444466',
+            color: '#8b6f47',
         }).setOrigin(0.5);
 
         // Floating particles in menu
@@ -89,14 +89,14 @@ export class MenuScene extends Phaser.Scene {
     }
 
     _createBackground(w, h) {
-        // Dark gradient background
+        // Kitchen floor background
         const bg = this.add.graphics();
-        bg.fillStyle(0x0a0a0f, 1);
+        bg.fillStyle(COLORS.BG_FLOOR, 1);
         bg.fillRect(0, 0, w, h);
 
-        // Grid lines
+        // Tile grid lines
         const gridSize = 40;
-        bg.lineStyle(1, 0x151520, 0.5);
+        bg.lineStyle(1, COLORS.BG_TILE, 0.5);
         for (let x = 0; x < w; x += gridSize) {
             bg.lineBetween(x, 0, x, h);
         }
@@ -112,9 +112,9 @@ export class MenuScene extends Phaser.Scene {
         const bg = this.add.graphics();
         const btnW = 260 * scale;
         const btnH = 50;
-        bg.fillStyle(0x1a1a2e, 0.9);
+        bg.fillStyle(COLORS.UI_BG, 0.9);
         bg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
-        bg.lineStyle(2, COLORS.NEON_CYAN, 0.6);
+        bg.lineStyle(2, COLORS.KITCHEN_ORANGE, 0.6);
         bg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
 
         // Button text
@@ -132,9 +132,9 @@ export class MenuScene extends Phaser.Scene {
         // Hover effects
         container.on('pointerover', () => {
             bg.clear();
-            bg.fillStyle(0x252545, 0.9);
+            bg.fillStyle(0x5d4a3a, 0.9);
             bg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
-            bg.lineStyle(2, COLORS.NEON_CYAN, 1);
+            bg.lineStyle(2, COLORS.KITCHEN_ORANGE, 1);
             bg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
             this.tweens.add({
                 targets: container,
@@ -146,9 +146,9 @@ export class MenuScene extends Phaser.Scene {
 
         container.on('pointerout', () => {
             bg.clear();
-            bg.fillStyle(0x1a1a2e, 0.9);
+            bg.fillStyle(COLORS.UI_BG, 0.9);
             bg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
-            bg.lineStyle(2, COLORS.NEON_CYAN, 0.6);
+            bg.lineStyle(2, COLORS.KITCHEN_ORANGE, 0.6);
             bg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
             this.tweens.add({
                 targets: container,
@@ -170,7 +170,7 @@ export class MenuScene extends Phaser.Scene {
                 Phaser.Math.Between(0, w),
                 Phaser.Math.Between(0, h),
                 Phaser.Math.Between(1, 3),
-                COLORS.NEON_CYAN,
+                COLORS.KITCHEN_ORANGE,
                 Phaser.Math.FloatBetween(0.1, 0.3)
             );
 
@@ -191,7 +191,7 @@ export class MenuScene extends Phaser.Scene {
         // Simple overlay leaderboard
         const { width, height } = this.scale;
         const overlay = this.add.graphics();
-        overlay.fillStyle(0x000000, 0.8);
+        overlay.fillStyle(0x3d2a1a, 0.95);
         overlay.fillRect(0, 0, width, height);
         overlay.setInteractive(new Phaser.Geom.Rectangle(0, 0, width, height), Phaser.Geom.Rectangle.Contains);
 
@@ -212,7 +212,7 @@ export class MenuScene extends Phaser.Scene {
         const closeBtn = this.add.text(width / 2, height - 60, 'CLOSE', {
             fontSize: '18px',
             fontFamily: 'Arial, sans-serif',
-            color: COLORS.TEXT_GLOW,
+            color: COLORS.TEXT_ACCENT,
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
         closeBtn.on('pointerdown', () => {

@@ -41,14 +41,13 @@ export class GameScene extends Phaser.Scene {
 
         // Weapon state
         this.weapons = {};
-        this._addWeapon('energyBall');
+        this._addWeapon('sprayCan');
 
         // Passive stats
         this.passives = {
             moveSpeed: 0,
             maxHp: 0,
             xpMagnet: 0,
-            regen: 0,
             armor: 0,
             luck: 0,
         };
@@ -90,6 +89,25 @@ export class GameScene extends Phaser.Scene {
         // Sound init
         window.soundManager?.init();
 
+        // SDK sync
+        this._onAdOpen = () => {
+            this.isPaused = true;
+            this.physics.pause();
+        };
+        this._onAdClose = () => {
+            if (!this.scene.isActive('UpgradeScene')) { // don't unpause if player was leveling up
+                this.isPaused = false;
+                this.physics.resume();
+            }
+        };
+        window.addEventListener('ad_open', this._onAdOpen);
+        window.addEventListener('ad_close', this._onAdClose);
+
+        this.events.once('shutdown', () => {
+            window.removeEventListener('ad_open', this._onAdOpen);
+            window.removeEventListener('ad_close', this._onAdClose);
+        });
+
         // Resize handler
         this.scale.on('resize', (gameSize) => {
             this.gameWidth = gameSize.width;
@@ -115,7 +133,7 @@ export class GameScene extends Phaser.Scene {
             this._trailTimer += delta;
             if (this._trailTimer > 50) {
                 this._trailTimer = 0;
-                const trail = this.add.circle(this.player.x, this.player.y + 5, 4, 0x00ffff, 0.3);
+                const trail = this.add.circle(this.player.x, this.player.y + 5, 4, 0xe8913a, 0.3);
                 trail.setDepth(1);
                 this.tweens.add({
                     targets: trail,
@@ -158,10 +176,7 @@ export class GameScene extends Phaser.Scene {
         // XP magnet
         this._updateXPMagnet();
 
-        // Regen
-        if (this.passives.regen > 0) {
-            this.playerHP = Math.min(this.playerMaxHP, this.playerHP + this.passives.regen * dt);
-        }
+        // (regen removed per GDD — not a core fantasy)
 
         // Update enemy HP bars
         this._updateEnemyHPBars();
@@ -336,14 +351,41 @@ export class GameScene extends Phaser.Scene {
             this._spawnXPOrb(ox, oy, isBoss ? Math.ceil(xpValue / orbCount) : xpValue);
         }
 
-        // Death particles
-        this._spawnDeathParticles(enemy.x, enemy.y, color);
+        // Stain / flattened bug trace
+        const traceSize = isBoss ? 30 : 12;
+        const stain = this.add.ellipse(enemy.x, enemy.y + 5, traceSize, traceSize * 0.6, color, 0.5);
+        stain.setDepth(1); // floor level
+        stain.setScale(0);
+
+        // Juicy splat pop
+        this.tweens.add({
+            targets: stain,
+            scaleX: 1,
+            scaleY: 1,
+            duration: 150,
+            ease: 'Back.easeOut',
+            onComplete: () => {
+                this.tweens.add({
+                    targets: stain,
+                    alpha: 0,
+                    delay: 3000,
+                    duration: 2000,
+                    onComplete: () => stain.destroy(),
+                });
+            }
+        });
+
+        // Death particles (squash effect)
+        this._spawnDeathParticles(enemy.x, enemy.y, color, isBoss);
 
         // Screen effects
         if (isBoss) {
-            this.cameras.main.shake(300, 0.01);
+            this.cameras.main.shake(300, 0.015);
             this.cameras.main.flash(200, 255, 255, 255, 0.3);
             window.soundManager?.play('explosion');
+        } else {
+            // Micro shake on regular kills to make splat feel better
+            this.cameras.main.shake(50, 0.002);
         }
 
         window.soundManager?.play('kill');
@@ -420,7 +462,7 @@ export class GameScene extends Phaser.Scene {
         const pierce = this._getWeaponStat(weapon, 'pierce') || 1;
 
         for (let i = 0; i < count; i++) {
-            const proj = this.projectiles.get(this.player.x, this.player.y, 'proj_energyBall');
+            const proj = this.projectiles.get(this.player.x, this.player.y, 'proj_sprayCan');
             if (!proj) continue;
 
             proj.setActive(true).setVisible(true);
@@ -484,7 +526,7 @@ export class GameScene extends Phaser.Scene {
             currentTarget = nearest;
         }
 
-        window.soundManager?.play('lightning');
+        window.soundManager?.play('zap');
     }
 
     _drawLightning(x1, y1, x2, y2) {
@@ -519,7 +561,7 @@ export class GameScene extends Phaser.Scene {
         const range = this._getWeaponStat(weapon, 'range');
 
         // Visual aura pulse
-        const aura = this.add.circle(this.player.x, this.player.y, range, 0xff4400, 0.15);
+        const aura = this.add.circle(this.player.x, this.player.y, range, 0xdedede, 0.2);
         aura.setDepth(3);
         this.tweens.add({
             targets: aura,
@@ -545,8 +587,9 @@ export class GameScene extends Phaser.Scene {
 
         // Ensure correct number of orbitals
         while (this.orbitals.length < count) {
-            const orb = this.add.sprite(0, 0, 'proj_shield');
+            const orb = this.add.sprite(0, 0, 'proj_slipper');
             orb.setDepth(9);
+            orb.setScale(1.2);
             orb.setData('damage', this._getWeaponStat(weapon, 'damage'));
             orb.setData('angle', (this.orbitals.length / count) * Math.PI * 2);
             this.orbitals.push(orb);
@@ -555,7 +598,7 @@ export class GameScene extends Phaser.Scene {
 
     _updateOrbitals(time) {
         if (this.orbitals.length === 0) return;
-        const weapon = this.weapons.orbitShield;
+        const weapon = this.weapons.slipperOrbit;
         if (!weapon) return;
 
         const radius = this._getWeaponStat(weapon, 'orbitRadius') || 80;
@@ -568,12 +611,27 @@ export class GameScene extends Phaser.Scene {
             orb.x = this.player.x + Math.cos(angle) * radius;
             orb.y = this.player.y + Math.sin(angle) * radius;
 
-            // Check collision with enemies
+            // Tumbling motion for comedic and readable effect
+            orb.rotation = angle * 2 + time / 150;
+
+            // Check collision with enemies (Slipper smack!)
             this.enemies.getChildren().forEach(enemy => {
                 if (!enemy.active) return;
                 const dist = Phaser.Math.Distance.Between(orb.x, orb.y, enemy.x, enemy.y);
                 if (dist < 20) {
-                    this._damageEnemy(enemy, damage * 0.1); // tick damage
+                    if (!enemy.getData('lastSlipperHit') || time - enemy.getData('lastSlipperHit') > 200) {
+                        enemy.setData('lastSlipperHit', time);
+                        this._damageEnemy(enemy, damage); // tick damage
+                        this.cameras.main.shake(40, 0.003); // Slipper impact feel
+
+                        // Slipper hit pop
+                        const hitPop = this.add.circle(enemy.x, enemy.y, 8, 0xffffff, 0.8);
+                        hitPop.setDepth(8);
+                        this.tweens.add({
+                            targets: hitPop, scaleX: 2, scaleY: 2, alpha: 0, duration: 150,
+                            onComplete: () => hitPop.destroy()
+                        });
+                    }
                 }
             });
         });
@@ -597,7 +655,7 @@ export class GameScene extends Phaser.Scene {
             }
 
             // Meteor falling animation
-            const meteor = this.add.sprite(targetX, targetY - 200, 'proj_meteor');
+            const meteor = this.add.sprite(targetX, targetY - 200, 'proj_poisonBomb');
             meteor.setDepth(11);
             meteor.setAlpha(0.8);
 
@@ -774,6 +832,14 @@ export class GameScene extends Phaser.Scene {
         const value = orb.getData('value');
         this.playerXP += value;
 
+        // Pop effect
+        const pop = this.add.circle(player.x, player.y, 10, 0xf2c94c, 0.6);
+        pop.setDepth(5);
+        this.tweens.add({
+            targets: pop, scaleX: 2, scaleY: 2, alpha: 0, duration: 150,
+            onComplete: () => pop.destroy()
+        });
+
         orb.setActive(false).setVisible(false);
         orb.body.enable = false;
 
@@ -804,13 +870,13 @@ export class GameScene extends Phaser.Scene {
         window.soundManager?.play('levelup');
 
         // Flash effect
-        this.cameras.main.flash(200, 0, 255, 255, 0.2);
+        this.cameras.main.flash(200, 242, 201, 76, 0.2);
 
         // Show level up text
         const text = this.add.text(this.player.x, this.player.y - 40, 'LEVEL UP!', {
             fontSize: '20px',
             fontFamily: 'Arial, sans-serif',
-            color: '#00ffff',
+            color: '#f2c94c',
             fontStyle: 'bold',
             stroke: '#000000',
             strokeThickness: 3,
@@ -860,21 +926,23 @@ export class GameScene extends Phaser.Scene {
 
     // === VISUAL EFFECTS ===
 
-    _spawnDeathParticles(x, y, color) {
-        for (let i = 0; i < 8; i++) {
-            const p = this.add.circle(x, y, Phaser.Math.Between(2, 4), color, 0.8);
+    _spawnDeathParticles(x, y, color, isBoss = false) {
+        const count = isBoss ? 20 : 6;
+        for (let i = 0; i < count; i++) {
+            const p = this.add.circle(x, y, Phaser.Math.Between(3, 6), color, 0.9);
             p.setDepth(7);
-            const angle = (i / 8) * Math.PI * 2;
-            const dist = Phaser.Math.Between(20, 50);
+            const angle = Math.random() * Math.PI * 2;
+            const dist = Phaser.Math.Between(10, isBoss ? 80 : 35);
 
             this.tweens.add({
                 targets: p,
                 x: x + Math.cos(angle) * dist,
                 y: y + Math.sin(angle) * dist,
                 alpha: 0,
-                scaleX: 0,
-                scaleY: 0,
-                duration: Phaser.Math.Between(200, 400),
+                scaleX: { from: 1, to: 0 },
+                scaleY: { from: 0.5, to: 1.5 }, // Squashed shape
+                duration: Phaser.Math.Between(150, 300),
+                ease: 'Cubic.easeOut',
                 onComplete: () => p.destroy(),
             });
         }
@@ -968,7 +1036,7 @@ export class GameScene extends Phaser.Scene {
 
         // XP bar background
         this.xpBarBg = this.add.graphics();
-        this.xpBarBg.fillStyle(0x112222, 0.8);
+        this.xpBarBg.fillStyle(0x2d1f10, 0.8);
         this.xpBarBg.fillRoundedRect(20, 35, 200, 8, 2);
 
         // XP bar fill
@@ -978,7 +1046,7 @@ export class GameScene extends Phaser.Scene {
         this.levelText = this.add.text(22, 46, 'Lv.1', {
             fontSize: '12px',
             fontFamily: 'Arial, sans-serif',
-            color: '#44ffaa',
+            color: '#f2c94c',
             fontStyle: 'bold',
         });
 
@@ -997,10 +1065,10 @@ export class GameScene extends Phaser.Scene {
         }).setOrigin(0.5, 0);
 
         // Kill counter
-        this.killText = this.add.text(w - 20, 15, '☠ 0', {
+        this.killText = this.add.text(w - 20, 15, '🪳 0', {
             fontSize: '16px',
             fontFamily: 'Arial, sans-serif',
-            color: '#ff6666',
+            color: '#d94f3d',
         }).setOrigin(1, 0);
 
         this.hudContainer.add([
@@ -1034,7 +1102,7 @@ export class GameScene extends Phaser.Scene {
         this.timerText.setText(`${mins}:${secs}`);
 
         this.waveText.setText(`Wave ${this.currentWave}`);
-        this.killText.setText(`☠ ${this.kills}`);
+        this.killText.setText(`🪳 ${this.kills}`);
     }
 
     _repositionHUD() {
@@ -1110,12 +1178,12 @@ export class GameScene extends Phaser.Scene {
     _createBackground(worldSize) {
         const half = worldSize / 2;
         const bg = this.add.graphics();
-        bg.fillStyle(COLORS.BG_DARK, 1);
+        bg.fillStyle(COLORS.BG_FLOOR, 1);
         bg.fillRect(-half, -half, worldSize, worldSize);
 
-        // Grid
+        // Kitchen tile grid
         const gridSize = 60;
-        bg.lineStyle(1, COLORS.BG_GRID, 0.3);
+        bg.lineStyle(1, COLORS.BG_TILE, 0.4);
         for (let x = -half; x <= half; x += gridSize) {
             bg.lineBetween(x, -half, x, half);
         }
@@ -1144,8 +1212,7 @@ export class GameScene extends Phaser.Scene {
             const score = Math.floor(this.gameTime / 1000) * this.kills;
             window.yandexSDK?.submitScore('highscore', score);
 
-            // Show interstitial ad
-            window.yandexSDK?.showInterstitial();
+            // Ad is handled when clicking Retry/Menu in GameOverScene
 
             this.cameras.main.fadeOut(500, 0, 0, 0);
             this.time.delayedCall(500, () => {

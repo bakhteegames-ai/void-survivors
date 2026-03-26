@@ -21,19 +21,19 @@ export class GameOverScene extends Phaser.Scene {
 
         // Background
         const bg = this.add.graphics();
-        bg.fillStyle(0x0a0a0f, 1);
+        bg.fillStyle(COLORS.BG_FLOOR, 1);
         bg.fillRect(0, 0, width, height);
 
-        // Grid effect
-        bg.lineStyle(1, 0x151520, 0.3);
+        // Tile grid effect
+        bg.lineStyle(1, COLORS.BG_TILE, 0.5);
         for (let x = 0; x < width; x += 40) bg.lineBetween(x, 0, x, height);
         for (let y = 0; y < height; y += 40) bg.lineBetween(0, y, width, y);
 
         // Title
-        const title = this.add.text(width / 2, height * 0.12, 'GAME OVER', {
-            fontSize: '42px',
+        const title = this.add.text(width / 2, height * 0.12, 'KITCHEN OVERRUN!', {
+            fontSize: '36px',
             fontFamily: 'Arial Black, Arial, sans-serif',
-            color: '#ff3344',
+            color: '#d94f3d',
             stroke: '#000000',
             strokeThickness: 4,
         }).setOrigin(0.5);
@@ -65,7 +65,7 @@ export class GameOverScene extends Phaser.Scene {
 
         const statsData = [
             { label: '⏱ Time', value: `${mins}:${secs}` },
-            { label: '☠ Kills', value: this.stats.kills.toString() },
+            { label: '🪳 Bugs Squashed', value: this.stats.kills.toString() },
             { label: '⭐ Level', value: this.stats.level.toString() },
             { label: '🌊 Wave', value: this.stats.wave.toString() },
             { label: '🏆 Score', value: this.stats.score.toLocaleString() },
@@ -88,28 +88,24 @@ export class GameOverScene extends Phaser.Scene {
             }).setOrigin(1, 0);
         });
 
-        // Revive button (rewarded ad)
-        this._createButton(width / 2, height * 0.65, '📺 REVIVE (Watch Ad)', async () => {
-            window.soundManager?.play('select');
-            const rewarded = await window.yandexSDK?.showRewarded();
-            if (rewarded) {
-                // Revive with 50% HP
-                this.scene.start('GameScene');
-            }
-        }, 0xffcc00);
-
         // Retry button
-        this._createButton(width / 2, height * 0.76, '🔄 PLAY AGAIN', () => {
+        this._createButton(width / 2, height * 0.70, '🔄 PLAY AGAIN', async () => {
             window.soundManager?.play('select');
+
+            if (window.yandexSDK) {
+                await window.yandexSDK.showInterstitial();
+            }
+
             this.cameras.main.fadeOut(300, 0, 0, 0);
             this.time.delayedCall(300, () => {
                 this.scene.start('GameScene');
             });
-        }, COLORS.NEON_CYAN);
+        }, COLORS.KITCHEN_ORANGE);
 
         // Menu button
-        this._createButton(width / 2, height * 0.87, '🏠 MENU', () => {
+        this._createButton(width / 2, height * 0.82, '🏠 MENU', () => {
             window.soundManager?.play('select');
+
             this.cameras.main.fadeOut(300, 0, 0, 0);
             this.time.delayedCall(300, () => {
                 this.scene.start('MenuScene');
@@ -120,7 +116,7 @@ export class GameOverScene extends Phaser.Scene {
         this.cameras.main.fadeIn(500, 0, 0, 0);
     }
 
-    _createButton(x, y, text, callback, color = COLORS.NEON_CYAN) {
+    _createButton(x, y, text, callback, color = COLORS.KITCHEN_ORANGE) {
         const container = this.add.container(x, y);
         const btnW = 260;
         const btnH = 44;

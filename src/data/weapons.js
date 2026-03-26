@@ -1,7 +1,7 @@
 export const WEAPON_TYPES = {
-    energyBall: {
-        name: 'Energy Ball',
-        description: 'Fires energy projectiles at nearest enemy',
+    sprayCan: {
+        name: 'Spray Can',
+        description: 'Sprays bug-killing aerosol at nearest pest',
         type: 'projectile',
         damage: 10,
         fireRate: 800,
@@ -10,7 +10,7 @@ export const WEAPON_TYPES = {
         projectileCount: 1,
         pierce: 1,
         size: 8,
-        color: 0x00ffff,
+        color: 0x7ab648,    // green spray
         maxLevel: 8,
         upgrades: {
             damage: 5,
@@ -19,9 +19,9 @@ export const WEAPON_TYPES = {
             pierce: 1, // every 4 levels
         },
     },
-    lightning: {
-        name: 'Lightning',
-        description: 'Chain lightning hits multiple enemies',
+    bugZapper: {
+        name: 'Bug Zapper',
+        description: 'Chain zap fries multiple bugs at once',
         type: 'chain',
         damage: 15,
         fireRate: 1500,
@@ -29,7 +29,7 @@ export const WEAPON_TYPES = {
         chainCount: 3,
         chainRange: 120,
         size: 6,
-        color: 0xffff00,
+        color: 0xf2c94c,    // electric yellow
         maxLevel: 8,
         upgrades: {
             damage: 7,
@@ -37,15 +37,15 @@ export const WEAPON_TYPES = {
             chainCount: 1,
         },
     },
-    fireAura: {
-        name: 'Fire Aura',
-        description: 'Burns enemies near you',
+    hotSteam: {
+        name: 'Hot Steam Aura',
+        description: 'Scalding steam burns nearby pests',
         type: 'aura',
         damage: 5,
         fireRate: 500,
         range: 80,
         size: 80,
-        color: 0xff4400,
+        color: 0xdedede,    // steam white
         maxLevel: 8,
         upgrades: {
             damage: 3,
@@ -53,9 +53,9 @@ export const WEAPON_TYPES = {
             fireRate: -30,
         },
     },
-    orbitShield: {
-        name: 'Orbit Shield',
-        description: 'Rotating shields damage enemies on contact',
+    slipperOrbit: {
+        name: 'Slipper Orbit',
+        description: 'Rotating slippers smack bugs on contact',
         type: 'orbital',
         damage: 12,
         fireRate: 100, // tick rate
@@ -63,7 +63,7 @@ export const WEAPON_TYPES = {
         orbitRadius: 80,
         orbitSpeed: 3,
         size: 14,
-        color: 0x4488ff,
+        color: 0xd94f3d,    // warm red slipper
         maxLevel: 8,
         upgrades: {
             damage: 5,
@@ -71,9 +71,9 @@ export const WEAPON_TYPES = {
             orbitRadius: 10,
         },
     },
-    meteorStrike: {
-        name: 'Meteor Strike',
-        description: 'Meteors fall on groups of enemies',
+    poisonBomb: {
+        name: 'Poison Bomb',
+        description: 'Fumigation bombs land on clusters of pests',
         type: 'aoe',
         damage: 30,
         fireRate: 3000,
@@ -81,7 +81,7 @@ export const WEAPON_TYPES = {
         aoeRadius: 60,
         meteorCount: 1,
         size: 20,
-        color: 0xff8800,
+        color: 0x9b59b6,    // poison purple
         maxLevel: 8,
         upgrades: {
             damage: 15,
@@ -93,50 +93,42 @@ export const WEAPON_TYPES = {
 };
 
 export const PASSIVE_UPGRADES = {
-    moveSpeed: {
-        name: 'Swift Boots',
-        description: 'Increase movement speed',
-        icon: '⚡',
+    kitchenHustle: {
+        name: 'Kitchen Hustle',
+        description: 'Move faster around the kitchen',
+        icon: '👟',
         maxLevel: 5,
         valuePerLevel: 20,
         stat: 'moveSpeed',
     },
-    maxHp: {
-        name: 'Vitality',
+    thickSkin: {
+        name: 'Thick Skin',
         description: 'Increase max HP',
-        icon: '💗',
+        icon: '💪',
         maxLevel: 5,
         valuePerLevel: 20,
         stat: 'maxHp',
     },
-    xpMagnet: {
-        name: 'XP Magnet',
-        description: 'Increase XP pickup range',
+    crumbMagnet: {
+        name: 'Crumb Magnet',
+        description: 'Pick up crumbs from further away',
         icon: '🧲',
         maxLevel: 5,
         valuePerLevel: 30,
         stat: 'xpMagnet',
     },
-    regen: {
-        name: 'Regeneration',
-        description: 'Recover HP over time',
-        icon: '💚',
-        maxLevel: 5,
-        valuePerLevel: 0.5, // HP per second
-        stat: 'regen',
-    },
-    armor: {
-        name: 'Armor',
-        description: 'Reduce damage taken',
-        icon: '🛡️',
+    apronArmor: {
+        name: 'Apron Armor',
+        description: 'Reduce damage taken from pests',
+        icon: '🧑‍🍳',
         maxLevel: 5,
         valuePerLevel: 3,
         stat: 'armor',
     },
-    luck: {
-        name: 'Luck',
+    pestInstinct: {
+        name: 'Pest Instinct',
         description: 'Better upgrade choices',
-        icon: '🍀',
+        icon: '🎯',
         maxLevel: 3,
         valuePerLevel: 1,
         stat: 'luck',
