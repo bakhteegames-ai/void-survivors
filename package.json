@@ -1,0 +1,27 @@
+{
+  "name": "void-survivors",
+  "version": "1.0.0",
+  "description": "Void Survivors - A 2D survivor-like game for Yandex Games",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "webpack serve --mode development",
+    "build": "webpack --mode production",
+    "clean": "rimraf dist"
+  },
+  "author": "BakhDev",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "copy-webpack-plugin": "^14.0.0",
+    "html-webpack-plugin": "^5.6.6",
+    "phaser": "^3.90.0",
+    "rimraf": "^6.1.3",
+    "webpack": "^5.105.4",
+    "webpack-cli": "^7.0.2",
+    "webpack-dev-server": "^5.2.3"
+  },
+  "devDependencies": {
+    "css-loader": "^7.1.4",
+    "style-loader": "^4.0.0"
+  }
+}
