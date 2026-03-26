@@ -124,30 +124,30 @@ export class BootScene extends Phaser.Scene {
 
         // Body — much flatter/longer to look like a fast running roach
         g.fillStyle(0x6b4226, 1);
-        g.fillEllipse(cx, cy, 12, 20);
+        g.fillEllipse(cx, cy, 22, 14);
 
         // Darker shell
         g.fillStyle(0x4a2e1a, 0.7);
-        g.fillEllipse(cx, cy - 2, 10, 12);
+        g.fillEllipse(cx, cy - 1, 18, 10);
 
         // Antennae
         g.lineStyle(1.5, 0x4a2e1a, 0.8);
-        g.lineBetween(cx - 3, cy - 6, cx - 7, cy - 12);
-        g.lineBetween(cx + 3, cy - 6, cx + 7, cy - 12);
+        g.lineBetween(cx - 4, cy - 6, cx - 9, cy - 12);
+        g.lineBetween(cx + 4, cy - 6, cx + 9, cy - 12);
 
         // Legs (3 per side)
         g.lineStyle(1, 0x4a2e1a, 0.7);
-        g.lineBetween(cx - 6, cy - 2, cx - 10, cy - 5);
-        g.lineBetween(cx - 7, cy, cx - 11, cy);
-        g.lineBetween(cx - 6, cy + 2, cx - 10, cy + 5);
-        g.lineBetween(cx + 6, cy - 2, cx + 10, cy - 5);
-        g.lineBetween(cx + 7, cy, cx + 11, cy);
-        g.lineBetween(cx + 6, cy + 2, cx + 10, cy + 5);
+        g.lineBetween(cx - 11, cy - 2, cx - 14, cy - 5);
+        g.lineBetween(cx - 12, cy, cx - 15, cy);
+        g.lineBetween(cx - 11, cy + 2, cx - 14, cy + 5);
+        g.lineBetween(cx + 11, cy - 2, cx + 14, cy - 4);
+        g.lineBetween(cx + 12, cy, cx + 15, cy);
+        g.lineBetween(cx + 11, cy + 2, cx + 14, cy + 5);
 
         // Eyes (small dots)
         g.fillStyle(0x000000, 1);
-        g.fillCircle(cx - 2, cy - 4, 1);
-        g.fillCircle(cx + 2, cy - 4, 1);
+        g.fillCircle(cx - 4, cy - 5, 1);
+        g.fillCircle(cx + 4, cy - 5, 1);
 
         g.generateTexture('enemy_cockroach', s, s);
         g.destroy();
