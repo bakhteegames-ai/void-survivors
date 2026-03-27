@@ -89,11 +89,15 @@ export class GameOverScene extends Phaser.Scene {
         });
 
         // Retry button
-        this._createButton(width / 2, height * 0.70, '🔄 PLAY AGAIN', async () => {
+        this._createButton(width / 2, height * 0.70, '▶ PLAY AGAIN', async () => {
             window.soundManager?.play('select');
 
             if (window.yandexSDK) {
-                await window.yandexSDK.showInterstitial();
+                try {
+                    await window.yandexSDK.showInterstitial();
+                } catch (e) {
+                    console.warn('Ad error:', e);
+                }
             }
 
             this.cameras.main.fadeOut(300, 0, 0, 0);

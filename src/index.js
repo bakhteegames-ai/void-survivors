@@ -8,10 +8,8 @@ import { YandexSDK } from './sdk/YandexSDK';
 
 // Initialize Yandex SDK
 window.yandexSDK = new YandexSDK();
-window.yandexSDK.init().then(() => {
-    console.log('Yandex SDK ready');
-}).catch(() => {
-    console.log('Running without Yandex SDK (local dev)');
+window.yandexSDK.init().catch((e) => {
+    console.warn('Running without Yandex SDK (local dev)', e);
 });
 
 const config = {

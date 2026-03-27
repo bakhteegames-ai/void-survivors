@@ -29,7 +29,6 @@ export class YandexSDK {
 
             // Game ready
             this.sdk.features.LoadingAPI?.ready();
-            console.log('Yandex SDK initialized');
         } catch (e) {
             console.warn('Yandex SDK init failed:', e);
         }
@@ -46,7 +45,6 @@ export class YandexSDK {
             this.sdk.adv.showFullscreenAdv({
                 callbacks: {
                     onOpen: () => {
-                        console.log('Interstitial opened');
                         window.dispatchEvent(new Event('ad_open'));
                         if (window.soundManager && window.soundManager.ctx) window.soundManager.ctx.suspend();
                     },
@@ -74,7 +72,6 @@ export class YandexSDK {
             this.sdk.adv.showRewardedVideo({
                 callbacks: {
                     onOpen: () => {
-                        console.log('Rewarded ad opened');
                         window.dispatchEvent(new Event('ad_open'));
                         if (window.soundManager && window.soundManager.ctx) window.soundManager.ctx.suspend();
                     },

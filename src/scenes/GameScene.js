@@ -114,6 +114,11 @@ export class GameScene extends Phaser.Scene {
             this.gameHeight = gameSize.height;
             this._repositionHUD();
         });
+
+        // Initial enemies to prevent empty start
+        for (let i = 0; i < 3; i++) {
+            this._spawnEnemy();
+        }
     }
 
     update(time, delta) {
@@ -175,8 +180,6 @@ export class GameScene extends Phaser.Scene {
 
         // XP magnet
         this._updateXPMagnet();
-
-        // (regen removed per GDD — not a core fantasy)
 
         // Update enemy HP bars
         this._updateEnemyHPBars();
@@ -1025,54 +1028,74 @@ export class GameScene extends Phaser.Scene {
         this.hudContainer.setScrollFactor(0);
 
         const w = this.gameWidth;
+        this.hudBarWidth = Math.min(200, (w / 2) - 40);
 
         // HP bar background
         this.hpBarBg = this.add.graphics();
         this.hpBarBg.fillStyle(COLORS.HP_BG, 0.8);
-        this.hpBarBg.fillRoundedRect(20, 15, 200, 16, 4);
+        this.hpBarBg.fillRoundedRect(20, 20, this.hudBarWidth, 20, 6);
 
         // HP bar fill
         this.hpBarFill = this.add.graphics();
 
+        // HP Label
+        this.hpText = this.add.text(20 + this.hudBarWidth / 2, 30, '♥️ 100 / 100', {
+            fontSize: '12px',
+            fontFamily: 'Arial Black, Arial, sans-serif',
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 2,
+        }).setOrigin(0.5);
+
         // XP bar background
         this.xpBarBg = this.add.graphics();
         this.xpBarBg.fillStyle(0x2d1f10, 0.8);
-        this.xpBarBg.fillRoundedRect(20, 35, 200, 8, 2);
+        this.xpBarBg.fillRoundedRect(20, 48, this.hudBarWidth, 10, 4);
 
         // XP bar fill
         this.xpBarFill = this.add.graphics();
 
         // Level text
-        this.levelText = this.add.text(22, 46, 'Lv.1', {
-            fontSize: '12px',
+        this.levelText = this.add.text(22, 60, 'Lv.1', {
+            fontSize: '14px',
             fontFamily: 'Arial, sans-serif',
             color: '#f2c94c',
             fontStyle: 'bold',
+            stroke: '#000000',
+            strokeThickness: 2,
         });
 
         // Timer
-        this.timerText = this.add.text(w / 2, 15, '00:00', {
-            fontSize: '18px',
+        this.timerText = this.add.text(w / 2, 20, '00:00', {
+            fontSize: '28px',
             fontFamily: 'monospace',
-            color: '#ffffff',
+            fontStyle: 'bold',
+            color: '#fff8ee',
+            stroke: '#000000',
+            strokeThickness: 4,
         }).setOrigin(0.5, 0);
 
         // Wave text
-        this.waveText = this.add.text(w / 2, 36, 'Wave 1', {
-            fontSize: '12px',
-            fontFamily: 'Arial, sans-serif',
-            color: '#888899',
+        this.waveText = this.add.text(w / 2, 52, 'Wave 1', {
+            fontSize: '14px',
+            fontFamily: 'Arial Black, Arial, sans-serif',
+            color: '#e8913a',
+            stroke: '#000000',
+            strokeThickness: 3,
         }).setOrigin(0.5, 0);
 
         // Kill counter
-        this.killText = this.add.text(w - 20, 15, '🪳 0', {
-            fontSize: '16px',
+        this.killText = this.add.text(w - 20, 20, '🪳 0', {
+            fontSize: '20px',
             fontFamily: 'Arial, sans-serif',
             color: '#d94f3d',
+            fontStyle: 'bold',
+            stroke: '#000000',
+            strokeThickness: 3,
         }).setOrigin(1, 0);
 
         this.hudContainer.add([
-            this.hpBarBg, this.hpBarFill,
+            this.hpBarBg, this.hpBarFill, this.hpText,
             this.xpBarBg, this.xpBarFill,
             this.levelText, this.timerText,
             this.waveText, this.killText,
@@ -1085,13 +1108,17 @@ export class GameScene extends Phaser.Scene {
         const hpPercent = Math.max(0, this.playerHP / this.playerMaxHP);
         const hpColor = hpPercent > 0.5 ? 0x44ff44 : hpPercent > 0.25 ? 0xffaa00 : 0xff3344;
         this.hpBarFill.fillStyle(hpColor, 0.9);
-        this.hpBarFill.fillRoundedRect(21, 16, 198 * hpPercent, 14, 3);
+        this.hpBarFill.fillRoundedRect(20, 20, this.hudBarWidth * hpPercent, 20, 6);
+
+        if (this.hpText) {
+            this.hpText.setText(`♥️ ${Math.ceil(this.playerHP)} / ${this.playerMaxHP}`);
+        }
 
         // XP bar
         this.xpBarFill.clear();
         const xpPercent = this.playerXP / this.playerXPToLevel;
         this.xpBarFill.fillStyle(COLORS.XP_COLOR, 0.8);
-        this.xpBarFill.fillRoundedRect(21, 36, 198 * xpPercent, 6, 2);
+        this.xpBarFill.fillRoundedRect(20, 48, this.hudBarWidth * xpPercent, 10, 4);
 
         // Texts
         this.levelText.setText(`Lv.${this.playerLevel}`);
@@ -1111,6 +1138,18 @@ export class GameScene extends Phaser.Scene {
         this.timerText.setX(w / 2);
         this.waveText.setX(w / 2);
         this.killText.setX(w - 20);
+
+        this.hudBarWidth = Math.min(200, (w / 2) - 40);
+
+        this.hpBarBg.clear();
+        this.hpBarBg.fillStyle(COLORS.HP_BG, 0.8);
+        this.hpBarBg.fillRoundedRect(20, 20, this.hudBarWidth, 20, 6);
+
+        if (this.hpText) this.hpText.setX(20 + this.hudBarWidth / 2);
+
+        this.xpBarBg.clear();
+        this.xpBarBg.fillStyle(0x2d1f10, 0.8);
+        this.xpBarBg.fillRoundedRect(20, 48, this.hudBarWidth, 10, 4);
     }
 
     // === TOUCH CONTROLS ===
