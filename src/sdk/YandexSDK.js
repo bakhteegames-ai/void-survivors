@@ -128,6 +128,10 @@ export class YandexSDK {
     // --- Player Data ---
 
     async saveData(data) {
+        try {
+            localStorage.setItem('bugKitchenSave', JSON.stringify(data));
+        } catch (e) { }
+
         if (!this.isReady || !this.player) return;
         try {
             await this.player.setData(data, true);
@@ -137,13 +141,22 @@ export class YandexSDK {
     }
 
     async loadData() {
-        if (!this.isReady || !this.player) return null;
-        try {
-            return await this.player.getData();
-        } catch (e) {
-            console.warn('Load data failed:', e);
-            return null;
+        let data = null;
+        if (this.isReady && this.player) {
+            try {
+                data = await this.player.getData();
+            } catch (e) {
+                console.warn('Load data failed:', e);
+            }
         }
+
+        if (!data || Object.keys(data).length === 0) {
+            try {
+                const stored = localStorage.getItem('bugKitchenSave');
+                if (stored) data = JSON.parse(stored);
+            } catch (e) { }
+        }
+        return data || {};
     }
 
     // --- Environment ---

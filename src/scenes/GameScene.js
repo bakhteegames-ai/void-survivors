@@ -1085,7 +1085,7 @@ export class GameScene extends Phaser.Scene {
         }).setOrigin(0.5, 0);
 
         // Kill counter
-        this.killText = this.add.text(w - 20, 20, '🪳 0', {
+        this.killText = this.add.text(w - 70, 20, '🪳 0', {
             fontSize: '20px',
             fontFamily: 'Arial, sans-serif',
             color: '#d94f3d',
@@ -1094,12 +1094,33 @@ export class GameScene extends Phaser.Scene {
             strokeThickness: 3,
         }).setOrigin(1, 0);
 
+        // Pause button
+        this.pauseBtn = this.add.text(w - 20, 16, '⏸', {
+            fontSize: '24px',
+            fontFamily: 'Arial, sans-serif',
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 3,
+            padding: { left: 10, right: 10, top: 5, bottom: 5 }
+        }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
+
+        this.pauseBtn.on('pointerdown', () => {
+            window.soundManager?.play('select');
+            this._showPauseMenu();
+        });
+
         this.hudContainer.add([
             this.hpBarBg, this.hpBarFill, this.hpText,
             this.xpBarBg, this.xpBarFill,
             this.levelText, this.timerText,
-            this.waveText, this.killText,
+            this.waveText, this.killText, this.pauseBtn
         ]);
+
+        // Pause overlay
+        this.pauseOverlay = this.add.container(0, 0);
+        this.pauseOverlay.setDepth(200);
+        this.pauseOverlay.setScrollFactor(0);
+        this.pauseOverlay.setVisible(false);
     }
 
     _updateHUD() {
@@ -1137,7 +1158,8 @@ export class GameScene extends Phaser.Scene {
         const w = this.gameWidth;
         this.timerText.setX(w / 2);
         this.waveText.setX(w / 2);
-        this.killText.setX(w - 20);
+        this.killText.setX(w - 70);
+        this.pauseBtn.setX(w - 20);
 
         this.hudBarWidth = Math.min(200, (w / 2) - 40);
 
@@ -1150,6 +1172,104 @@ export class GameScene extends Phaser.Scene {
         this.xpBarBg.clear();
         this.xpBarBg.fillStyle(0x2d1f10, 0.8);
         this.xpBarBg.fillRoundedRect(20, 48, this.hudBarWidth, 10, 4);
+
+        if (this.pauseOverlay && this.pauseOverlay.visible) {
+            this._updatePauseMenuLayout();
+        }
+    }
+
+    // === PAUSE MENU ===
+
+    _createUIButton(x, y, text, callback, color = 0xe8913a) {
+        const container = this.add.container(x, y);
+        const btnW = 200;
+        const btnH = 44;
+
+        const bg = this.add.graphics();
+        bg.fillStyle(0x3d2a1a, 0.9);
+        bg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
+        bg.lineStyle(2, color, 0.6);
+        bg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
+
+        const btnText = this.add.text(0, 0, text, {
+            fontSize: '15px',
+            fontFamily: 'Arial, sans-serif',
+            color: '#ffffff',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        container.add([bg, btnText]);
+        container.setSize(btnW, btnH);
+        container.setInteractive({ useHandCursor: true });
+
+        container.on('pointerover', () => container.setScale(1.05));
+        container.on('pointerout', () => container.setScale(1));
+        container.on('pointerdown', callback);
+
+        return container;
+    }
+
+    _showPauseMenu() {
+        if (this.isGameOver) return;
+        this.isPaused = true;
+        this.physics.pause();
+
+        if (this.pauseOverlay.list.length === 0) {
+            const w = this.gameWidth;
+            const h = this.gameHeight;
+
+            const bg = this.add.graphics();
+            bg.fillStyle(0x000000, 0.7);
+            bg.fillRect(0, 0, w, h);
+            bg.setInteractive(new Phaser.Geom.Rectangle(0, 0, w, h), Phaser.Geom.Rectangle.Contains);
+
+            const title = this.add.text(w / 2, h * 0.3, 'PAUSED', {
+                fontSize: '32px',
+                fontFamily: 'Arial Black, sans-serif',
+                color: '#ffffff'
+            }).setOrigin(0.5);
+
+            const resumeBtn = this._createUIButton(w / 2, h * 0.5, '▶ RESUME', () => {
+                window.soundManager?.play('select');
+                this.pauseOverlay.setVisible(false);
+                this.isPaused = false;
+                this.physics.resume();
+            }, 0xe8913a);
+
+            const menuBtn = this._createUIButton(w / 2, h * 0.65, '🏠 MENU', () => {
+                this.input.enabled = false;
+                window.soundManager?.play('select');
+                this.cameras.main.fadeOut(300, 0, 0, 0);
+                this.orbitals.forEach(o => o.destroy());
+                this.orbitals = [];
+                this.time.delayedCall(300, () => {
+                    this.scene.start('MenuScene');
+                });
+            }, 0x888899);
+
+            this.pauseOverlay.add([bg, title, resumeBtn, menuBtn]);
+        } else {
+            this._updatePauseMenuLayout();
+        }
+
+        this.pauseOverlay.setVisible(true);
+    }
+
+    _updatePauseMenuLayout() {
+        if (!this.pauseOverlay || this.pauseOverlay.list.length === 0) return;
+        const w = this.gameWidth;
+        const h = this.gameHeight;
+
+        const bg = this.pauseOverlay.list[0];
+        bg.clear();
+        bg.fillStyle(0x000000, 0.7);
+        bg.fillRect(0, 0, w, h);
+        bg.input.hitArea.width = w;
+        bg.input.hitArea.height = h;
+
+        this.pauseOverlay.list[1].setPosition(w / 2, h * 0.3);
+        this.pauseOverlay.list[2].setPosition(w / 2, h * 0.5);
+        this.pauseOverlay.list[3].setPosition(w / 2, h * 0.65);
     }
 
     // === TOUCH CONTROLS ===

@@ -80,16 +80,66 @@ export class GameOverScene extends Phaser.Scene {
                 color: '#888899',
             });
 
-            this.add.text(panelX + panelW - 25, sy, stat.value, {
+            const valText = this.add.text(panelX + panelW - 25, sy, stat.value, {
                 fontSize: '15px',
                 fontFamily: 'Arial, sans-serif',
                 color: '#ffffff',
                 fontStyle: 'bold',
             }).setOrigin(1, 0);
+
+            if (stat.label === '🏆 Score') {
+                this.scoreTextRef = valText;
+            }
         });
+
+        // Best Stats Display
+        this.bestStatsText = this.add.text(width / 2, panelY + panelH + 12, '', {
+            fontSize: '13px',
+            fontFamily: 'Arial, sans-serif',
+            color: '#8b6f47',
+            align: 'center',
+            lineSpacing: 4
+        }).setOrigin(0.5, 0);
+
+        let isAlive = true;
+        this.events.once('shutdown', () => isAlive = false);
+        this.events.once('destroy', () => isAlive = false);
+
+        // Save best stats
+        if (window.yandexSDK) {
+            window.yandexSDK.loadData().then(data => {
+                if (!isAlive || !this.scene || !this.scene.manager) return;
+
+                let isNewBest = false;
+                let bestScore = this.stats.score;
+                let bestTime = this.stats.time;
+                let bestKills = this.stats.kills;
+                if (data) {
+                    if (this.stats.score > (data.bestScore || 0)) isNewBest = true;
+                    bestScore = Math.max(data.bestScore || 0, this.stats.score);
+                    bestTime = Math.max(data.bestTime || 0, this.stats.time);
+                    bestKills = Math.max(data.bestKills || 0, this.stats.kills);
+                }
+                window.yandexSDK.saveData({ bestScore, bestTime, bestKills });
+
+                if (this.bestStatsText && this.bestStatsText.active) {
+                    const seconds = Math.floor(bestTime / 1000);
+                    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+                    const secs = (seconds % 60).toString().padStart(2, '0');
+                    this.bestStatsText.setText(`🏆 Best Score: ${bestScore}\n⏱ Best Time: ${mins}:${secs}   🪳 Best Kills: ${bestKills}`);
+                }
+
+                if (isNewBest && this.scoreTextRef && this.scoreTextRef.active) {
+                    this.scoreTextRef.setText(this.stats.score.toLocaleString() + ' (NEW BEST!)');
+                    this.scoreTextRef.setColor('#ffcc00');
+                }
+            }).catch(e => console.warn(e));
+        }
 
         // Retry button
         this._createButton(width / 2, height * 0.70, '▶ PLAY AGAIN', async () => {
+            if (!isAlive) return;
+            this.input.enabled = false;
             window.soundManager?.play('select');
 
             if (window.yandexSDK) {
@@ -108,6 +158,8 @@ export class GameOverScene extends Phaser.Scene {
 
         // Menu button
         this._createButton(width / 2, height * 0.82, '🏠 MENU', () => {
+            if (!isAlive) return;
+            this.input.enabled = false;
             window.soundManager?.play('select');
 
             this.cameras.main.fadeOut(300, 0, 0, 0);

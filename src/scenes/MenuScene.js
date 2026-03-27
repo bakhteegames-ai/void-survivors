@@ -41,6 +41,17 @@ export class MenuScene extends Phaser.Scene {
             align: 'center',
         }).setOrigin(0.5);
 
+        // Best stats display
+        this.bestStatsText = this.add.text(width / 2, height * 0.45, '', {
+            fontSize: '12px',
+            fontFamily: 'Arial, sans-serif',
+            color: '#8b6f47',
+            align: 'center',
+            lineSpacing: 4
+        }).setOrigin(0.5);
+
+        this._loadBestStats();
+
         // Play button
         this._createButton(width / 2, height * 0.55, '▶  PLAY', () => {
             window.soundManager?.play('select');
@@ -221,5 +232,24 @@ export class MenuScene extends Phaser.Scene {
             items.forEach(i => i.destroy());
             closeBtn.destroy();
         });
+    }
+
+    async _loadBestStats() {
+        if (!window.yandexSDK) return;
+        try {
+            const data = await window.yandexSDK.loadData();
+            if (!this.scene || !this.scene.isActive()) return;
+
+            if (data && (data.bestScore > 0 || data.bestTime > 0 || data.bestKills > 0)) {
+                if (!this.bestStatsText || !this.bestStatsText.active) return;
+                const seconds = Math.floor((data.bestTime || 0) / 1000);
+                const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const secs = (seconds % 60).toString().padStart(2, '0');
+
+                this.bestStatsText.setText(`🏆 Best Score: ${data.bestScore || 0}\n⏱ Best Time: ${mins}:${secs}   🪳 Best Kills: ${data.bestKills || 0}`);
+            }
+        } catch (e) {
+            console.warn(e);
+        }
     }
 }
