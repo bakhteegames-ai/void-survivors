@@ -23,6 +23,19 @@ export class GameScene extends Phaser.Scene {
         this.isPaused = false;
         this.isGameOver = false;
 
+        // Combo system
+        this.comboCount = 0;
+        this.comboMultiplier = 1;
+        this.lastKillTime = 0;
+
+        // Critical hits
+        this.critChance = BALANCE.CRIT_CHANCE_BASE;
+        this.critMultiplier = BALANCE.CRIT_MULTIPLIER;
+
+        // Time slowdown
+        this.isSlowMotion = false;
+        this.slowMotionTimer = 0;
+
         // World bounds
         const worldSize = BALANCE.GAME_AREA_SIZE;
         this.physics.world.setBounds(-worldSize / 2, -worldSize / 2, worldSize, worldSize);
@@ -50,6 +63,7 @@ export class GameScene extends Phaser.Scene {
             xpMagnet: 0,
             armor: 0,
             luck: 0,
+            critChance: 0,
         };
         this.passiveLevels = {};
 
@@ -128,6 +142,23 @@ export class GameScene extends Phaser.Scene {
         this.gameTime += delta;
         this.waveTimer += delta;
         this.spawnTimer += delta;
+
+        // Time slowdown handling
+        if (this.isSlowMotion) {
+            this.slowMotionTimer -= delta;
+            if (this.slowMotionTimer <= 0) {
+                this.physics.world.timeScale = 1;
+                this.isSlowMotion = false;
+            }
+        }
+
+        // Combo decay
+        if (Date.now() - this.lastKillTime > BALANCE.COMBO_WINDOW) {
+            if (this.comboMultiplier > 1) {
+                this.comboCount = 0;
+                this.comboMultiplier = 1;
+            }
+        }
 
         // Update player movement
         this._updatePlayerMovement();
@@ -341,17 +372,37 @@ export class GameScene extends Phaser.Scene {
         this._showBossWarning(bossData.name);
     }
 
-    _killEnemy(enemy) {
+    _killEnemy(enemy, damageSource = null) {
         const xpValue = enemy.getData('xpValue');
         const color = enemy.getData('color');
         const isBoss = enemy.getData('isBoss');
 
-        // Spawn XP orbs
+        // Combo system
+        const now = Date.now();
+        if (now - this.lastKillTime < BALANCE.COMBO_WINDOW) {
+            this.comboCount++;
+            this.comboMultiplier = Math.min(
+                BALANCE.COMBO_MAX_MULTIPLIER,
+                1 + Math.floor(this.comboCount / 5) * 0.5
+            );
+        } else {
+            this.comboCount = 1;
+            this.comboMultiplier = 1;
+        }
+        this.lastKillTime = now;
+
+        // Critical hit check
+        const isCrit = damageSource && Math.random() < this.critChance;
+        const finalDamageMult = isCrit ? this.critMultiplier : 1;
+
+        // Spawn XP orbs (with combo bonus)
         const orbCount = isBoss ? 10 : 1;
+        const xpBonus = Math.ceil(xpValue * (this.comboMultiplier - 1) * 0.2);
         for (let i = 0; i < orbCount; i++) {
             const ox = enemy.x + Phaser.Math.Between(-15, 15);
             const oy = enemy.y + Phaser.Math.Between(-15, 15);
-            this._spawnXPOrb(ox, oy, isBoss ? Math.ceil(xpValue / orbCount) : xpValue);
+            const orbXP = isBoss ? Math.ceil(xpValue / orbCount) : xpValue;
+            this._spawnXPOrb(ox, oy, orbXP + (i === 0 ? xpBonus : 0));
         }
 
         // Stain / flattened bug trace
@@ -389,6 +440,17 @@ export class GameScene extends Phaser.Scene {
         } else {
             // Micro shake on regular kills to make splat feel better
             this.cameras.main.shake(50, 0.002);
+        }
+
+        // Crit visual effect
+        if (isCrit) {
+            this._showDamageNumber(enemy.x, enemy.y, 'CRIT!', 0xff0000, 32, true);
+            window.soundManager?.play('crit');
+        }
+
+        // Show combo text
+        if (this.comboMultiplier > 1 && !isBoss) {
+            this._showComboText();
         }
 
         window.soundManager?.play('kill');
@@ -733,20 +795,24 @@ export class GameScene extends Phaser.Scene {
         return nearest;
     }
 
-    _damageEnemy(enemy, damage) {
+    _damageEnemy(enemy, damage, damageSource = null) {
         if (!enemy.active) return;
 
-        let hp = enemy.getData('hp') - damage;
+        // Critical hit check
+        const isCrit = damageSource && Math.random() < this.critChance;
+        const finalDamage = isCrit ? damage * this.critMultiplier : damage;
+
+        let hp = enemy.getData('hp') - finalDamage;
         enemy.setData('hp', hp);
 
-        // Flash white
-        enemy.setTint(0xffffff);
+        // Flash white (gold for crit)
+        enemy.setTint(isCrit ? 0xffaa00 : 0xffffff);
         this.time.delayedCall(50, () => {
             if (enemy.active) enemy.clearTint();
         });
 
-        // Damage number
-        this._spawnDamageNumber(enemy.x, enemy.y - 15, Math.round(damage));
+        // Damage number (with crit indicator)
+        this._spawnDamageNumber(enemy.x, enemy.y - 15, Math.round(finalDamage), isCrit);
 
         // Knockback
         const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, enemy.x, enemy.y);
@@ -756,7 +822,7 @@ export class GameScene extends Phaser.Scene {
         window.soundManager?.play('hit');
 
         if (hp <= 0) {
-            this._killEnemy(enemy);
+            this._killEnemy(enemy, damageSource);
         }
     }
 
@@ -872,31 +938,39 @@ export class GameScene extends Phaser.Scene {
     _onLevelUp() {
         window.soundManager?.play('levelup');
 
+        // Time slowdown effect
+        this.isSlowMotion = true;
+        this.slowMotionTimer = BALANCE.LEVEL_UP_SLOWDOWN_DURATION;
+        this.physics.world.timeScale = BALANCE.LEVEL_UP_SLOWDOWN_FACTOR;
+
         // Flash effect
-        this.cameras.main.flash(200, 242, 201, 76, 0.2);
+        this.cameras.main.flash(300, 242, 201, 76, 0.3);
 
         // Show level up text
         const text = this.add.text(this.player.x, this.player.y - 40, 'LEVEL UP!', {
-            fontSize: '20px',
-            fontFamily: 'Arial, sans-serif',
+            fontSize: '24px',
+            fontFamily: 'Arial Black, Arial, sans-serif',
             color: '#f2c94c',
             fontStyle: 'bold',
             stroke: '#000000',
-            strokeThickness: 3,
+            strokeThickness: 4,
         }).setOrigin(0.5).setDepth(20);
 
         this.tweens.add({
             targets: text,
             y: text.y - 40,
+            scaleX: { from: 0.5, to: 1.2 },
+            scaleY: { from: 0.5, to: 1.2 },
             alpha: 0,
-            duration: 1000,
+            duration: 1200,
+            ease: 'Back.easeOut',
             onComplete: () => text.destroy(),
         });
 
         // Pause and show upgrade selection
         this.isPaused = true;
         this.physics.pause();
-        this.time.delayedCall(300, () => {
+        this.time.delayedCall(400, () => {
             this.scene.launch('UpgradeScene', {
                 weapons: this.weapons,
                 passiveLevels: this.passiveLevels,
@@ -905,6 +979,8 @@ export class GameScene extends Phaser.Scene {
                     this._applyUpgrade(choice);
                     this.isPaused = false;
                     this.physics.resume();
+                    this.physics.world.timeScale = 1; // Restore time speed
+                    this.isSlowMotion = false;
                 },
             });
         });
@@ -923,6 +999,11 @@ export class GameScene extends Phaser.Scene {
             if (passive.stat === 'maxHp') {
                 this.playerMaxHP = BALANCE.PLAYER_MAX_HP + this.passives.maxHp;
                 this.playerHP = Math.min(this.playerHP + passive.valuePerLevel, this.playerMaxHP);
+            }
+            
+            // Apply crit chance
+            if (passive.stat === 'critChance') {
+                this.critChance = BALANCE.CRIT_CHANCE_BASE + this.passives.critChance;
             }
         }
     }
@@ -951,23 +1032,62 @@ export class GameScene extends Phaser.Scene {
         }
     }
 
-    _spawnDamageNumber(x, y, damage) {
+    _spawnDamageNumber(x, y, damage, isCrit = false) {
+        const fontSize = isCrit ? 28 : (damage >= 30 ? '16px' : '12px');
+        const color = isCrit ? '#ff3333' : (damage >= 30 ? '#ffcc00' : '#ffffff');
+        
         const text = this.add.text(x, y, damage.toString(), {
-            fontSize: damage >= 30 ? '16px' : '12px',
-            fontFamily: 'Arial, sans-serif',
-            color: damage >= 30 ? '#ffcc00' : '#ffffff',
-            fontStyle: 'bold',
+            fontSize: fontSize,
+            fontFamily: 'Arial Black, Arial, sans-serif',
+            color: color,
+            fontStyle: isCrit ? 'bold italic' : 'bold',
             stroke: '#000000',
-            strokeThickness: 2,
+            strokeThickness: isCrit ? 4 : 2,
         }).setOrigin(0.5).setDepth(15);
+
+        // Crit effect: bigger pop
+        if (isCrit) {
+            text.setScale(0.5);
+            this.tweens.add({
+                targets: text,
+                scaleX: 1.5,
+                scaleY: 1.5,
+                duration: 150,
+                ease: 'Back.easeOut',
+                yoyo: true,
+            });
+        }
 
         this.tweens.add({
             targets: text,
             y: y - 30,
             alpha: 0,
-            duration: 600,
+            duration: isCrit ? 1000 : 600,
             ease: 'Quad.easeOut',
             onComplete: () => text.destroy(),
+        });
+    }
+
+    _showComboText() {
+        const comboText = this.add.text(this.player.x, this.player.y - 60, 
+            `COMBO x${this.comboMultiplier.toFixed(1)}!`, {
+            fontSize: '18px',
+            fontFamily: 'Arial Black, Arial, sans-serif',
+            color: '#ff9900',
+            fontStyle: 'bold',
+            stroke: '#000000',
+            strokeThickness: 3,
+        }).setOrigin(0.5).setDepth(20);
+
+        this.tweens.add({
+            targets: comboText,
+            y: this.player.y - 90,
+            scaleX: { from: 0.8, to: 1.1 },
+            scaleY: { from: 0.8, to: 1.1 },
+            alpha: 0,
+            duration: 800,
+            ease: 'Quad.easeOut',
+            onComplete: () => comboText.destroy(),
         });
     }
 
