@@ -133,4 +133,12 @@ export const PASSIVE_UPGRADES = {
         valuePerLevel: 1,
         stat: 'luck',
     },
+    killerInstinct: {
+        name: 'Killer Instinct',
+        description: 'Increase critical hit chance',
+        icon: '⚔️',
+        maxLevel: 5,
+        valuePerLevel: 0.03, // +3% per level
+        stat: 'critChance',
+    },
 };

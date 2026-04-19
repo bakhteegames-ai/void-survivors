@@ -25,6 +25,18 @@ export const BALANCE = {
 
     // Game
     GAME_AREA_SIZE: 3000, // world size
+
+    // Combo system
+    COMBO_WINDOW: 2000, // ms to keep combo alive
+    COMBO_MAX_MULTIPLIER: 10,
+
+    // Critical hits
+    CRIT_CHANCE_BASE: 0.05, // 5% base crit chance
+    CRIT_MULTIPLIER: 2.0,
+
+    // Time slowdown on level up
+    LEVEL_UP_SLOWDOWN_DURATION: 1000, // ms
+    LEVEL_UP_SLOWDOWN_FACTOR: 0.2, // 20% speed
 };
 
 export const COLORS = {
